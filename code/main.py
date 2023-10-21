@@ -7,13 +7,12 @@ from thop import profile # JackAdd for complex assesment
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 parser = argparse.ArgumentParser(description="PReNet_train")
 parser.add_argument("--preprocess", type=bool, default=True, help='run prepare_data or not')
-parser.add_argument("--batch_size", type=int, default=10, help="Training batch size")  
-parser.add_argument("--epochs", type=int, default=300, help="Number of training epochs") 
+parser.add_argument("--batch_size", type=int, default=4, help="Training batch size")  
+parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs") 
 parser.add_argument("--milestone", type=int, default=[30,50,80], help="When to decay learning rate")
 parser.add_argument("--lr", type=float, default=1e-4, help="initial learning rate")
 parser.add_argument("--save_path", type=str, default="/data/ProjectData/Derain/Rain200L/TrainedModel/mixDTPNet/Logs/200L-MSEtrick", help='path to save models and log files')  
 parser.add_argument("--save_freq",type=int,default=1,help='save intermediate model')
-parser.add_argument("--Logsave_path",type=str, default="log1.txt",help='path to training data') 
 parser.add_argument("--use_gpu", type=bool, default=True, help='use GPU or not')
 parser.add_argument("--gpu_id", type=str, default="0", help='GPU id')
 parser.add_argument("--recurrent_iter", type=int, default=3, help='number of recursive stages')
@@ -24,12 +23,10 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision.utils as utils
 from tensorboardX import SummaryWriter
-from utils import *
 from torch.optim.lr_scheduler import MultiStepLR
-from utils import SSIM
+from utils import SSIM, findLastCheckpoint, batch_PSNR
 from tqdm import tqdm
 from networks import CTPnet
-# from networks_pretrained import CTPnet
 from dataset import Datase_h5f
 
 device = torch.device('cuda')
@@ -37,7 +34,6 @@ device = torch.device('cuda')
 GPU_NUM = torch.cuda.device_count()
 GPU_NUM = 0 # 手动禁止DDP
 if  GPU_NUM>1:
-    # Logsave_path = sys.argv[1]
     local_rank = int(os.environ['LOCAL_RANK'])
     world_size = int(os.environ['WORLD_SIZE'])
     rank = int(os.environ['RANK'])
@@ -74,7 +70,8 @@ def main():
     writer = SummaryWriter(opt.save_path)   
 
     # load the lastest model  
-    initial_epoch = findLastCheckpoint(save_dir=opt.save_path)
+    # initial_epoch = findLastCheckpoint(save_dir=opt.save_path)
+    initial_epoch = 0
     if initial_epoch > 0:
         print('resuming by loading epoch %d' % initial_epoch)
         if  GPU_NUM>1:
@@ -113,8 +110,11 @@ def main():
 
             if i==0:
                 # ============== parameter assement ===========================
+                # import pdb
+                # pdb.set_trace()
+                # print(input_train.shape)
                 # 打印模型参数数量
-                summary(model, input_size=(3, 100, 100))
+                summary(model, input_size=(3, 96, 96)) # (3, 100, 100)
                 # 计算FLOPs
                 flops, params = profile(model, inputs=(input_train, ))
                 print(f"FLOPs: {flops}, Parameters: {params}")
