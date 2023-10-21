@@ -1,7 +1,8 @@
 JackDiary.md
-
-
-
+backup
+__pycache__
+.vscode
+.gitignore
 
 
 
