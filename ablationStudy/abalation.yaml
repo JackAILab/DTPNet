@@ -1,0 +1,35 @@
+version_1:
+  preprocess: true
+  batch_size: 4
+  epochs: 100
+  milestone: [30, 50, 80]
+  lr: 1e-4
+  save_path: "/data/ProjectData/Derain/Rain200L/TrainedModel/mixDTPNet/Logs/200L-MSEtrick"
+  save_freq: 1
+  use_gpu: true
+  gpu_id: "0"
+  recurrent_iter: 3
+
+version_2:
+  preprocess: false
+  batch_size: 8
+  epochs: 150
+  milestone: [40, 60, 90]
+  lr: 5e-5
+  save_path: "/path/to/save/version2/models"
+  save_freq: 2
+  use_gpu: true
+  gpu_id: "1"
+  recurrent_iter: 4
+
+version_3:
+  preprocess: true
+  batch_size: 6
+  epochs: 120
+  milestone: [35, 55, 85]
+  lr: 2e-4
+  save_path: "/path/to/save/version3/models"
+  save_freq: 3
+  use_gpu: false
+  gpu_id: ""
+  recurrent_iter: 2

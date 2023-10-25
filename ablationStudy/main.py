@@ -1,24 +1,3 @@
-import torch 
-import os
-import argparse
-import numpy as np
-from torchsummary import summary
-from thop import profile # JackAdd for complex assesment
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
-parser = argparse.ArgumentParser(description="PReNet_train")
-parser.add_argument("--preprocess", type=bool, default=True, help='run prepare_data or not')
-parser.add_argument("--batch_size", type=int, default=4, help="Training batch size")  
-parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs") 
-parser.add_argument("--milestone", type=int, default=[30,50,80], help="When to decay learning rate")
-parser.add_argument("--lr", type=float, default=1e-4, help="initial learning rate")
-parser.add_argument("--save_path", type=str, default="/data/ProjectData/Derain/Rain200L/TrainedModel/mixDTPNet/Logs/200L-MSEtrick", help='path to save models and log files')  
-parser.add_argument("--save_freq",type=int,default=1,help='save intermediate model')
-parser.add_argument("--use_gpu", type=bool, default=True, help='use GPU or not')
-parser.add_argument("--gpu_id", type=str, default="0", help='GPU id')
-parser.add_argument("--recurrent_iter", type=int, default=3, help='number of recursive stages')
-opt = parser.parse_args(args=[])
-
-
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.utils as utils
@@ -28,6 +7,40 @@ from utils import SSIM, findLastCheckpoint, batch_PSNR
 from tqdm import tqdm
 from networks import DTPnet
 from dataset import Datase_h5f
+
+import torch 
+import os
+import argparse
+import numpy as np
+from torchsummary import summary
+from thop import profile # JackAdd for complex assesment
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+import argparse
+import yaml
+
+# 读取 YAML 文件
+with open("config.yaml", "r") as config_file:
+    config = yaml.safe_load(config_file)
+
+# 根据不同版本选择参数
+selected_version = "version_1"  # 可以根据需要选择不同版本
+config = config[selected_version]
+
+# 创建参数解析器
+parser = argparse.ArgumentParser(description="PReNet_train")
+parser.add_argument("--preprocess", type=bool, default=config["preprocess"], help='run prepare_data or not')
+parser.add_argument("--batch_size", type=int, default=config["batch_size"], help="Training batch size")
+parser.add_argument("--epochs", type=int, default=config["epochs"], help="Number of training epochs")
+parser.add_argument("--milestone", type=int, default=config["milestone"], help="When to decay learning rate")
+parser.add_argument("--lr", type=float, default=config["lr"], help="initial learning rate")
+parser.add_argument("--save_path", type=str, default=config["save_path"], help='path to save models and log files')
+parser.add_argument("--save_freq", type=int, default=config["save_freq"], help='save intermediate model')
+parser.add_argument("--use_gpu", type=bool, default=config["use_gpu"], help='use GPU or not')
+parser.add_argument("--gpu_id", type=str, default=config["gpu_id"], help='GPU id')
+parser.add_argument("--recurrent_iter", type=int, default=config["recurrent_iter"], help='number of recursive stages')
+
+opt = parser.parse_args(args=[])
+
 
 device = torch.device('cuda')
 
