@@ -11,7 +11,7 @@ parser.add_argument("--batch_size", type=int, default=4, help="Training batch si
 parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs") 
 parser.add_argument("--milestone", type=int, default=[30,50,80], help="When to decay learning rate")
 parser.add_argument("--lr", type=float, default=1e-4, help="initial learning rate")
-parser.add_argument("--save_path", type=str, default="/data/ProjectData/Derain/Rain200L/TrainedModel/mixDTPNet/Logs/200L-MSEtrick", help='path to save models and log files')  
+parser.add_argument("--save_path", type=str, default="/home/jack/Project/Derain/DTPNet/temp", help='path to save models and log files')  
 parser.add_argument("--save_freq",type=int,default=1,help='save intermediate model')
 parser.add_argument("--use_gpu", type=bool, default=True, help='use GPU or not')
 parser.add_argument("--gpu_id", type=str, default="0", help='GPU id')

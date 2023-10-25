@@ -33,8 +33,8 @@ def progress(y_origin):
     return y
 
 data_path = '/data/ProjectData/Derain/Rain100L/rainy'
-# log_path = '/home/jack/Project/Derain/CTPNet/hjhDerain/Logs/100H'
-log_path = "/data/ProjectData/Derain/Rain200L/TrainedModel/mixDTPNet/Logs/200L-MSEtrick"
+log_path = '/home/jack/Project/Derain/DTPNet/temp'
+# log_path = "/data/ProjectData/Derain/Rain200L/TrainedModel/mixDTPNet/Logs/200L-MSEtrick"
 
 patch = 1
 
