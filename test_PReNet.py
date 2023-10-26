@@ -2,12 +2,13 @@ import cv2
 import os
 import argparse
 import numpy as np
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import torch
 from torch.autograd import Variable
 from networks import CTPnet
 import tqdm
 from utils import SSIM,normalize,batch_PSNR
+from PIL import Image
 
 parser = argparse.ArgumentParser(description="PReNet_Test")
 parser.add_argument("--logdir", type=str, default="/home/huangjh/Project/DeRain/JackCode/PreNet_Demo_copy/logs/PreNet_test/", help='path to model and log files')  # 使用自己训练得到的模型
@@ -21,6 +22,44 @@ opt = parser.parse_args()
 if opt.use_GPU:
     os.environ["CUDA_VISIBLE_DEVICES"] = opt.gpu_id
 
+save_path = "/data/ProjectData/Derain/Rain200H/TrainedModel/mixDTPNet/Logs/derainedIMG/"
+
+
+# output = output.cpu().detach().numpy().squeeze().transpose(1, 2, 0) # torch.Size([1, 3, 480, 320])
+# input = input.squeeze().transpose((1, 2, 0)) # (481, 321, 3)
+# gt = gt.cpu().detach().numpy().squeeze().transpose(1, 2, 0) # torch.Size([1, 3, 480, 320])
+
+def save_images(output, input, gt, img_name):
+    # 将模型输出转换为图像
+    output = output.cpu().detach().numpy().squeeze().transpose(1, 2, 0)
+    output = (output * 255).astype('uint8')
+    output_image = Image.fromarray(output)
+
+    # 调整 input 大小为与 gt 相同
+    input = input.squeeze().transpose(1, 2, 0)  # (481, 321, 3)
+    input_image = Image.fromarray(input)
+    input_image = input_image.resize((320, 480))  # 调整大小为 (320, 480)
+
+    # 将 gt 转换为图像
+    gt = gt.squeeze().transpose(1, 2, 0)  # (3, 480, 320)
+    gt = (gt * 255).astype('uint8')
+    gt_image = Image.fromarray(gt)
+
+    # 合并三个图像为一个
+    images = [output_image, input_image, gt_image]
+
+    # 创建一个新图像，将三个图像水平叠加
+    combined_image = Image.new('RGB', (3 * 320, 480))
+    for i, img in enumerate(images):
+        combined_image.paste(img, (i * 320, 0))
+
+    # 生成文件名
+    file_name = f"{img_name}.jpg"
+
+    # 保存合成的图像，默认保存到当前目录
+    combined_image.save(file_name)
+    print(f"图像已保存到: {file_name}")
+
 def progress(y_origin):
     b, g, r = cv2.split(y_origin)
     y = cv2.merge([r, g, b])
@@ -32,9 +71,12 @@ def progress(y_origin):
     y = Variable(torch.Tensor(y))
     return y
 
-data_path = '/data/ProjectData/Derain/Rain100L/rainy'
-log_path = '/home/jack/Project/Derain/DTPNet/temp'
+# data_path = '/data/ProjectData/Derain/Rain100L/rainy'
+# data_path = '/data/ProjectData/Derain/Rain200L/test/rain'
+data_path = '/data/ProjectData/Derain/Rain200H/test/rain'
+log_path = '/data/ProjectData/Derain/Rain200H/TrainedModel/mixDTPNet/Logs'
 # log_path = "/data/ProjectData/Derain/Rain200L/TrainedModel/mixDTPNet/Logs/200L-MSEtrick"
+# log_path = "/data/ProjectData/Derain/Rain200L/TrainedModel/mixDTPNet/Logs/200L-SSIMtrick"
 
 patch = 1
 
@@ -42,7 +84,7 @@ def test(model):
     model.zero_grad() # 测试退出的时候，清空梯度，防止第二个epoch爆炸
     model = CTPnet(use_GPU=True)
     model = model.cuda()
-    model.load_state_dict(torch.load(os.path.join(log_path, 'net_latest.pth')))
+    model.load_state_dict(torch.load(os.path.join(log_path, 'net_latest.pth')),strict=False)
     model.eval()
     psnr_test ,pixel_metric,count,psnr_max,ssim_max = 0,0,0,0,0
     for img_name in tqdm.tqdm(os.listdir(data_path)):
@@ -53,10 +95,14 @@ def test(model):
                 if opt.use_GPU:
                     torch.cuda.synchronize()
                 out, _ = model(y)
-                gt_path = os.path.join(data_path.replace('rainy','norain'), 'no'+img_name) #  Rain100H
-                # gt_path = os.path.join(data_path[:-4]+"norain", img_name.replace('x2','')) #  Rain200L
+                # gt_path = os.path.join(data_path.replace('rainy','norain'), 'no'+img_name) #  Rain100H
+                gt_path = os.path.join(data_path[:-4]+"norain", img_name.replace('x2','')) #  Rain200L
                 gt = progress(cv2.imread(gt_path)).cuda()[:,:,:,:]  
-                
+
+                # import pdb
+                # pdb.set_trace()
+                # save_images(out, y_origin, gt, img_name)
+                                
                 criterion = SSIM()
 
                 loss = criterion(out, gt) * out.shape[0]
