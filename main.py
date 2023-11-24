@@ -32,7 +32,7 @@ from dataset import Datase_h5f
 device = torch.device('cuda')
 
 GPU_NUM = torch.cuda.device_count()
-GPU_NUM = 0 # 手动禁止DDP
+GPU_NUM = 0 #  
 if  GPU_NUM>1:
     local_rank = int(os.environ['LOCAL_RANK'])
     world_size = int(os.environ['WORLD_SIZE'])
@@ -96,7 +96,7 @@ def main():
             # sum += batch_PSNR(input_train,target_train,1.0)
             # print(sum/(i+1))
             # continue
-            model.train()  # nn.Module.train的继承
+            model.train()   
             # model.zero_grad()
             optimizer.zero_grad()
             
@@ -113,9 +113,9 @@ def main():
                 # import pdb
                 # pdb.set_trace()
                 # print(input_train.shape)
-                # 打印模型参数数量
+                # Parameters
                 summary(model, input_size=(3, 96, 96)) # (3, 100, 100)
-                # 计算FLOPs
+                #  FLOPs
                 flops, params = profile(model, inputs=(input_train, ))
                 print(f"FLOPs: {flops}, Parameters: {params}")
                 # ============== parameter assement ===========================
@@ -125,7 +125,7 @@ def main():
             loss = -pixel_metric  
             loss = -pixel_metric + 0.5*layer2_loss  
             loss.backward() 
-            optimizer.step() # BUG 2022.07.22 将 step 放在每个epoch训练完以后
+            optimizer.step() # 
             
             # training curve
             psnr_all += batch_PSNR(out_train, target_train, 1.)* out_train.shape[0]
@@ -156,11 +156,11 @@ def main():
 
         scheduler.step(epoch)   
                     
-        if epoch == 300: # 40个 epoch 30min 测试一次                   
+        if epoch == 300: #           
             from test_PReNet import test
             optimizer.zero_grad() 
             psnr_test_average,pixel_metric_average = test(model)
-            # # 可视化
+            # # 
             out_train, _ = model(input_train)
             out_train = torch.clamp(out_train, 0., 1.)
             im_target = utils.make_grid(target_train.data, nrow=8, normalize=False, scale_each=True)
