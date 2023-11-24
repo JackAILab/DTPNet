@@ -26,7 +26,7 @@ from tensorboardX import SummaryWriter
 from torch.optim.lr_scheduler import MultiStepLR
 from utils import SSIM, findLastCheckpoint, batch_PSNR
 from tqdm import tqdm
-from networks import CTPnet
+from networks import DTPnet
 from dataset import Datase_h5f
 
 device = torch.device('cuda')
@@ -49,7 +49,7 @@ def main():
     print('Loading dataset ...\n')
     
     dataset_train = Datase_h5f("/data/ProjectData/Derain/Rain200L/train")
-    model = CTPnet(recurrent_iter=opt.recurrent_iter, use_GPU=opt.use_gpu).cuda()
+    model = DTPnet(recurrent_iter=opt.recurrent_iter, use_GPU=opt.use_gpu).cuda()
     
     # loader_train = DataLoader(dataset=dataset_train, num_workers=16, batch_size=opt.batch_size, shuffle=True)
     if  GPU_NUM>1:
@@ -77,7 +77,7 @@ def main():
         if  GPU_NUM>1:
             model.module.load_state_dict(torch.load(os.path.join(opt.save_path, 'net_epoch%d.pth' % initial_epoch)))
         else:
-            # model = CTPnet(recurrent_iter=opt.recurrent_iter, use_GPU=opt.use_gpu).cuda()
+            # model = DTPnet(recurrent_iter=opt.recurrent_iter, use_GPU=opt.use_gpu).cuda()
             model.load_state_dict(torch.load(os.path.join(opt.save_path, 'net_epoch%d.pth' % initial_epoch)))
             
     # Optimizer
