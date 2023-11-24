@@ -12,7 +12,7 @@ class CTPnet(nn.Module):
         # =========================================== Layer 1 ==================================
         dim = 64
         inp_channels=3
-        self.patch_embed = OverlapPatchEmbed(inp_channels, dim) # 先进行一次扩张
+        self.patch_embed = OverlapPatchEmbed(inp_channels, dim) 
         # ============================================ Layer 2 ===================================
         # == Pre-Refeine
         out_channel_color = 3
@@ -55,8 +55,8 @@ class CTPnet(nn.Module):
         self.conv3_2_HSI = nn.Sequential(*[TransformerBlock(dim=int(dim*2**1), num_heads=heads[1], ffn_expansion_factor=ffn_expansion_factor, bias=bias, LayerNorm_type=LayerNorm_type) for i in range(num_blocks[1])]) # 256+512, 256, channel_att=channel_att, spatial_att=TRUE
         self.conv2_1_HSI = nn.Sequential(*[TransformerBlock(dim=int(dim), num_heads=heads[0], ffn_expansion_factor=ffn_expansion_factor, bias=bias, LayerNorm_type=LayerNorm_type) for i in range(num_blocks[1])]) # 256+128, out_channel, channel_att=channel_att, spatial_att=TRUE
 
-        # self.outc = nn.Conv2d(out_channel, out_channel, 1, 1, 0) # 0改为1
-        # self.conv_final = nn.Conv2d(in_channels=75, out_channels=3, kernel_size=3, stride=1, padding=1) # 抛弃 KernelConv 将 75 channel 变为 12 channel
+        # self.outc = nn.Conv2d(out_channel, out_channel, 1, 1, 0)  
+        # self.conv_final = nn.Conv2d(in_channels=75, out_channels=3, kernel_size=3, stride=1, padding=1) 
         self.outc = nn.Sequential(*[TransformerBlock(dim=int(dim), num_heads=heads[0], ffn_expansion_factor=ffn_expansion_factor, bias=bias, LayerNorm_type=LayerNorm_type) for i in range(num_refinement_blocks)])
         self.conv_final = nn.Conv2d(int(dim), out_channel_color, kernel_size=3, stride=1, padding=1, bias=bias)
 
@@ -99,23 +99,23 @@ class CTPnet(nn.Module):
             nn.ReLU()
             )
         self.conv_i = nn.Sequential(
-            nn.Conv2d(32 + 32, 32, 3, 1, 1), # 这个卷积完成后，张量会成比例缩小(第1次大概/10)
+            nn.Conv2d(32 + 32, 32, 3, 1, 1), 
             nn.Sigmoid()
             )
         self.conv_f = nn.Sequential(
-            nn.Conv2d(32 + 32, 32, 3, 1, 1), # 这个张良完成后，张量会恢复原大小
+            nn.Conv2d(32 + 32, 32, 3, 1, 1), 
             nn.Sigmoid()
             )
         self.conv_g = nn.Sequential(
-            nn.Conv2d(32 + 32, 32, 3, 1, 1), # 这个张量完成后，张量不但缩小/10，而且会产生负数(Tanh)
+            nn.Conv2d(32 + 32, 32, 3, 1, 1),  
             nn.Tanh()
             )
         self.conv_o = nn.Sequential(
-            nn.Conv2d(32 + 32, 32, 3, 1, 1), # 这个张量完成后，张量保持和g输出的相似
+            nn.Conv2d(32 + 32, 32, 3, 1, 1),  
             nn.Sigmoid()
             )
         self.conv = nn.Sequential(
-            nn.Conv2d(32, 3, 3, 1, 1), # 细节最后一层没有激活函数！2022.08.11 Jack
+            nn.Conv2d(32, 3, 3, 1, 1), 
             )
 
 
@@ -190,7 +190,7 @@ class CTPnet(nn.Module):
 
             x = h #　以下逐级扩张
             resx = x
-            x = F.relu(self.res_conv1(x) + resx) # 此次更新后x又缩小一个量级
+            x = F.relu(self.res_conv1(x) + resx) #  
             resx = x
             x = F.relu(self.res_conv2(x) + resx)
             resx = x
@@ -198,11 +198,11 @@ class CTPnet(nn.Module):
             resx = x
             x = F.relu(self.res_conv4(x) + resx)
             resx = x
-            x = F.relu(self.res_conv5(x) + resx)  # BUG memory try setting max_split_size_mb to avoid fragmentation. 游戏本报错了！显存溢出！3.28 需要将batch改小点！
-            x = self.conv(x) # 没有激活函数的这一层，数据瞬间变回正常量级！
+            x = F.relu(self.res_conv5(x) + resx) 
+            x = self.conv(x) #  
 
             x = x + input
-            x_list.append(x) # 只需要最终输出的x即可，x_list仅做一个记录
+            x_list.append(x) # 
 
         # return x, count
         return x, pred1
@@ -223,7 +223,7 @@ from einops import rearrange
 ## Layer Norm
 
 def to_3d(x):
-    return rearrange(x, 'b c h w -> b (h w) c') # x.shape = torch.Size([2, 3, 480, 320]) 将 长宽维度 合并 torch.Size([2, 153600, 3])
+    return rearrange(x, 'b c h w -> b (h w) c') # x.shape = torch.Size([2, 3, 480, 320]) 
 
 def to_4d(x,h,w):
     return rearrange(x, 'b (h w) c -> b c h w',h=h,w=w)
@@ -258,7 +258,7 @@ class WithBias_LayerNorm(nn.Module): # dim=48  LayerNorm_type='WithBias'
         self.normalized_shape = normalized_shape
 
     def forward(self, x):
-        mu = x.mean(-1, keepdim=True) # 经过 rearrange之后 x.torch.Size([2, 153600, 3])  mu.torch.Size([2, 153600, 1])
+        mu = x.mean(-1, keepdim=True) #  
         sigma = x.var(-1, keepdim=True, unbiased=False) 
         return (x - mu) / torch.sqrt(sigma+1e-5) * self.weight + self.bias # torch.Size([2, 153600, 48]) * torch.Size([48]) + torch.Size([48])
 
@@ -273,7 +273,7 @@ class LayerNorm(nn.Module):
 
     def forward(self, x): # x.torch.Size([2, 3, 480, 320])
         h, w = x.shape[-2:] # h,w torch.Size([480, 320])
-        return to_4d(self.body(to_3d(x)), h, w) # 先压缩长宽 -> 再进行归一化缩放 -> 最后转回原来的shape
+        return to_4d(self.body(to_3d(x)), h, w) #  
 
 
 
@@ -293,7 +293,7 @@ class FeedForward(nn.Module):
 
     def forward(self, x):
         x = self.project_in(x) # x.torch.Size([2, 48, 480, 320]) -> x.torch.Size([2, 254, 480, 320])
-        x1, x2 = self.dwconv(x).chunk(2, dim=1) # x1.torch.Size([2, 127, 480, 320])    x2.torch.Size([2, 127, 480, 320])  chunk函数会将输入张量(input)沿着指定维度(dim)均匀的分割成特定数量的张量块(chunks)
+        x1, x2 = self.dwconv(x).chunk(2, dim=1) # x1.torch.Size([2, 127, 480, 320])    x2.torch.Size([2, 127, 480, 320])  
         x = F.gelu(x1) * x2  
         x = self.project_out(x) 
         return x # x.torch.Size([2, 48, 480, 320])
@@ -318,7 +318,7 @@ class Attention(nn.Module):
         b,c,h,w = x.shape
 
         qkv = self.qkv_dwconv(self.qkv(x))
-        q,k,v = qkv.chunk(3, dim=1)  # .chunk()方法能够按照某维度,对张量进行均匀切分,并且返回结果是原张量的视图
+        q,k,v = qkv.chunk(3, dim=1)  # 
         
         q = rearrange(q, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
         k = rearrange(k, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
@@ -373,9 +373,9 @@ class OverlapPatchEmbed(nn.Module):
         x_down_1 = F.interpolate(x_conv, scale_factor=0.5, mode='bilinear')
         x_down_2 = F.interpolate(x_down_1, scale_factor=0.5, mode='bilinear')
         x_up = self.up(x_down_2)
-        x_final = x_down_1 - x_up # 可视化此处 === 加入该模块的原理：可以执行多尺度特征分解和组合，提供了一个初始的多尺度特征分解效果  把纹理细节提取出来了
+        x_final = x_down_1 - x_up #  
         x_final = self.transform2(self.up(x_final))
-        x_out = x_real - x_final # 减去纹理细节，获得雨条纹
+        x_out = x_real - x_final #  
         return x_out # x.torch.Size([2, 48, 480, 320])
 
 
