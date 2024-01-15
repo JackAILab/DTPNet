@@ -13,7 +13,12 @@ Here is a list of the improved trackers.
 * Empirical results show that our proposed module for progressive inpainting achieves near state-of-the-art performance in several rain removal tasks.
 
 
+## Description
+This is the official repository of the paper 
+[Progressive network based on detail scaling and texture extraction: A more general framework for image deraining]([https://arxiv.org/abs/2311.14631](https://www.sciencedirect.com/science/article/pii/S092523122301189X)https://www.sciencedirect.com/science/article/pii/S092523122301189X) 
+## Updates 
 
+`19/11/2023` Paper accepect at Neurocomputing! 🐣🐣🐣
 
 
 
