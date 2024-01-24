@@ -30,35 +30,35 @@ save_path = "/data/ProjectData/Derain/Rain200H/TrainedModel/mixDTPNet/Logs/derai
 # gt = gt.cpu().detach().numpy().squeeze().transpose(1, 2, 0) # torch.Size([1, 3, 480, 320])
 
 def save_images(output, input, gt, img_name):
-    # 将模型输出转换为图像
+    
     output = output.cpu().detach().numpy().squeeze().transpose(1, 2, 0)
     output = (output * 255).astype('uint8')
     output_image = Image.fromarray(output)
 
-    # 调整 input 大小为与 gt 相同
+    
     input = input.squeeze().transpose(1, 2, 0)  # (481, 321, 3)
     input_image = Image.fromarray(input)
     input_image = input_image.resize((320, 480))  # 调整大小为 (320, 480)
 
-    # 将 gt 转换为图像
+    
     gt = gt.squeeze().transpose(1, 2, 0)  # (3, 480, 320)
     gt = (gt * 255).astype('uint8')
     gt_image = Image.fromarray(gt)
 
-    # 合并三个图像为一个
+   
     images = [output_image, input_image, gt_image]
 
-    # 创建一个新图像，将三个图像水平叠加
+    
     combined_image = Image.new('RGB', (3 * 320, 480))
     for i, img in enumerate(images):
         combined_image.paste(img, (i * 320, 0))
 
-    # 生成文件名
+    
     file_name = f"{img_name}.jpg"
 
-    # 保存合成的图像，默认保存到当前目录
+    
     combined_image.save(file_name)
-    print(f"图像已保存到: {file_name}")
+    print(f"Image Saved at: {file_name}")
 
 def progress(y_origin):
     b, g, r = cv2.split(y_origin)
@@ -81,7 +81,7 @@ log_path = '/data/ProjectData/Derain/Rain200H/TrainedModel/mixDTPNet/Logs'
 patch = 1
 
 def test(model):
-    model.zero_grad() # 测试退出的时候，清空梯度，防止第二个epoch爆炸
+    model.zero_grad() 
     model = CTPnet(use_GPU=True)
     model = model.cuda()
     model.load_state_dict(torch.load(os.path.join(log_path, 'net_latest.pth')),strict=False)
