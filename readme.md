@@ -1,6 +1,9 @@
 # Image Derain
 This repository records the proposed Image Derain methods based on Pytorch Library
 
+> **Abstract:** *Many feature extraction components have been proposed for image deraining tasks, aiming to improve feature learning. However, few models have addressed the integration of multi-scale features from derain images. The fusion of multiple features at different scales in one model has the potential to significantly enhance the authenticity and detail of raingy images restoration. This study introduces a migratable multi-scale feature blending model, which is a progressive learning model based on detail dilation and texture extraction. First, the degraded image is sent to the detail dilation module, which is designed to increase the detailed outline and obtain the coarse image features. Second, the extracted feature maps are sent to the multi-scale feature extraction (MFE) module and the multiscale hybrid strategy (MHS) module for improved texture restoration. Third, the simple convolution modules are replaced by an optimized transformer model to more efficiently extract contextual features and multi-scale information in images. Finally, a progressive learning strategy is employed to incrementally restore the degraded images. Empirical results show that our proposed module for progressive restoration achieves near state-of-the-art performance in several rain removal tasks. In particular, our model exhibits better rain removal realism compared to state-of-the-art models.* 
+<hr />
+
 ## Network Architecture
 
 <img src = picture/Framework.jpg> 
