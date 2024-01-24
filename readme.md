@@ -1,5 +1,6 @@
 # Image Derain
 This repository records the proposed Image Derain methods based on Pytorch Library
+
 ## Trackers
 Here is a list of the improved trackers.
 
@@ -16,12 +17,25 @@ Here is a list of the improved trackers.
 ## Description
 This is the official repository of the paper 
 [Progressive network based on detail scaling and texture extraction: A more general framework for image deraining]([https://arxiv.org/abs/2311.14631](https://www.sciencedirect.com/science/article/pii/S092523122301189X)https://www.sciencedirect.com/science/article/pii/S092523122301189X) 
+
 ## Updates 
 
 `19/11/2023` Paper accepect at Neurocomputing! 🐣🐣🐣
 
 
+# BibTeX
+If you find DTPNet useful for your research and applications, please cite using this BibTeX:
 
+```bibtex
+@article{huang2024progressive,
+  title={Progressive network based on detail scaling and texture extraction: A more general framework for image deraining},
+  author={Huang, Jiehui and Tang, Zhenchao and He, Xuedong and Zhou, Jun and Zhou, Defeng and Chen, Calvin Yu-Chian},
+  journal={Neurocomputing},
+  volume={568},
+  pages={127066},
+  year={2024},
+  publisher={Elsevier}
+}
 
 
 
