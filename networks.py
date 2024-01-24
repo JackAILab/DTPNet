@@ -45,12 +45,11 @@ class DTPnet(nn.Module):
             out_channel += (3 if color else 1) * burst_length
 
         # == Each Conv Layer
-        # 2~5层都是均值池化+3层卷积 
         self.conv1_2 = nn.Sequential(*[TransformerBlock(dim=dim, num_heads=heads[0], ffn_expansion_factor=ffn_expansion_factor, bias=bias, LayerNorm_type=LayerNorm_type) for i in range(num_blocks[0])]) # ([18, 3, 96, 96]) -> ([18, 64, 96, 96])  in_channel, 64, channel_att=False, spatial_att=False
         self.conv2_3 = nn.Sequential(*[TransformerBlock(dim=int(dim*2**1), num_heads=heads[1], ffn_expansion_factor=ffn_expansion_factor, bias=bias, LayerNorm_type=LayerNorm_type) for i in range(num_blocks[1])]) # 64, 128, channel_att=False, spatial_att=False
         self.conv3_4 = nn.Sequential(*[TransformerBlock(dim=int(dim*2**2), num_heads=heads[2], ffn_expansion_factor=ffn_expansion_factor, bias=bias, LayerNorm_type=LayerNorm_type) for i in range(num_blocks[2])]) # 128, 256, channel_att=False, spatial_att=False
         self.conv4_L = nn.Sequential(*[TransformerBlock(dim=int(dim*2**3), num_heads=heads[3], ffn_expansion_factor=ffn_expansion_factor, bias=bias, LayerNorm_type=LayerNorm_type) for i in range(num_blocks[3])]) # 256, 512, channel_att=False, spatial_att=False
-        # 基于空间注意力的上采样
+
         self.conv4_3_HSI = nn.Sequential(*[TransformerBlock(dim=int(dim*2**2), num_heads=heads[2], ffn_expansion_factor=ffn_expansion_factor, bias=bias, LayerNorm_type=LayerNorm_type) for i in range(num_blocks[1])]) # 512+512, 512, channel_att=channel_att, spatial_att=TRUE
         self.conv3_2_HSI = nn.Sequential(*[TransformerBlock(dim=int(dim*2**1), num_heads=heads[1], ffn_expansion_factor=ffn_expansion_factor, bias=bias, LayerNorm_type=LayerNorm_type) for i in range(num_blocks[1])]) # 256+512, 256, channel_att=channel_att, spatial_att=TRUE
         self.conv2_1_HSI = nn.Sequential(*[TransformerBlock(dim=int(dim), num_heads=heads[0], ffn_expansion_factor=ffn_expansion_factor, bias=bias, LayerNorm_type=LayerNorm_type) for i in range(num_blocks[1])]) # 256+128, out_channel, channel_att=channel_att, spatial_att=TRUE
@@ -121,11 +120,11 @@ class DTPnet(nn.Module):
 
     def forward(self, input):
         # ============================================ Layer 1 ===================================
-        # Method 1 全归一化流
+        # Method 1
         input_level1 = self.patch_embed(input)  # torch.Size([18, 3, 96, 96]) ->  torch.Size([18, 64, 96, 96])  先进行一次扩张
 
         # ============================================ Layer 2.1 (mixTrans)===================================
-        # 下采样
+        # Down
         conv1_2 = self.conv1_2(input_level1) # INV  torch.Size([18, 64, 96, 96]) ->  torch.Size([18, 64, 96, 96]) 
         input_level2 = self.down1_2(conv1_2) # torch.Size([18, 64, 96, 96]) -> torch.Size([18, 128, 48, 48])   # 下采样 block 1
 
@@ -135,32 +134,32 @@ class DTPnet(nn.Module):
         conv3_4 = self.conv3_4(input_level3) # INV  torch.Size([18, 256, 24, 24]) ->  torch.Size([18, 256, 24, 24]) 
         input_level4 = self.down3_4(conv3_4) # torch.Size([18, 256, 24, 24]) -> torch.Size([18, 512, 12, 12])
         
-        # 中间层
+        # Middle
         conv4_L = self.conv4_L(input_level4) # INV  torch.Size([18, 512, 12, 12]) ->  torch.Size([18, 512, 12, 12]) 
         
-        # 上采样
+        # Up
         inp_dec_level3 = self.up4_3(conv4_L) # torch.Size([6, 512, 12, 12]) -> torch.Size([6, 256, 24, 24]) size*2
         inp_dec_level3 = torch.cat([inp_dec_level3, conv3_4], 1) # torch.Size([6, 256, 24, 24]) -> torch.Size([6, 512, 24, 24]) concat: channel*2
         inp_dec_level3 = self.reduce_chan_level3(inp_dec_level3) # torch.Size([6, 512, 24, 24]) -> torch.Size([6, 256, 24, 24]) channel/2
         conv4_3 = self.conv4_3_HSI(inp_dec_level3) # torch.Size([6, 256, 24, 24]) -> torch.Size([6, 256, 24, 24])  INV                 
-        # 多尺度耦合1              
+        # Multilevel-1         
         conv4_3 = conv4_3 + self.up4_3(input_level4) # input_level4.torch.Size([6, 512, 12, 12])
 
         inp_dec_level2 = self.up3_2(conv4_3) # torch.Size([6, 256, 24, 24]) -> torch.Size([6, 128, 48, 48])
         inp_dec_level2 = torch.cat([inp_dec_level2, conv2_3], 1) # torch.Size([6, 128, 48, 48]) -> torch.Size([6, 256, 48, 48]) concat: channel*2
         inp_dec_level2 = self.reduce_chan_level2(inp_dec_level2) # torch.Size([6, 256, 48, 48]) -> torch.Size([6, 128, 48, 48]) channel/2
         conv3_2 = self.conv3_2_HSI(inp_dec_level2) # ([6, 128, 48, 48]) -> ([6, 128, 48, 48])  INV              
-        # 多尺度耦合2              
+        # Multilevel-2        
         conv3_2 = conv3_2 + self.up3_2(input_level3) # input_level3.torch.Size([6, 256, 24, 24])
 
         inp_dec_level1 = self.up2_1(conv3_2) # torch.Size([6, 128, 48, 48]) -> torch.Size([6, 64, 96, 96])
         inp_dec_level1 = torch.cat([inp_dec_level1, conv1_2], 1) # torch.Size([6, 64, 96, 96]) -> torch.Size([6, 128, 96, 96]) concat: channel*2
         inp_dec_level1 = self.reduce_chan_level1(inp_dec_level1) # torch.Size([6, 128, 96, 96]) -> torch.Size([6, 64, 96, 96]) channel/2  # 源码的 Restormer 此处没有 reduce_chan_level1
         conv2_1 = self.conv2_1_HSI(inp_dec_level1) # torch.Size([6, 64, 96, 96]) -> torch.Size([6, 64, 96, 96])  INV   
-        # 多尺度耦合3              
+        # Multilevel-3             
         conv2_1 = conv2_1 + self.up2_1(input_level2) # input_level2.torch.Size([6, 128, 48, 48])
 
-        # 后处理
+        
         core1 = self.outc(conv2_1) # conv2_1.torch.Size([6, 64, 96, 96]) ->  core1.torch.Size([6, 64, 96, 96])
         pred1 = self.conv_final(core1) # pred1.torch.Size([6, 3, 96, 96])
 
@@ -177,18 +176,18 @@ class DTPnet(nn.Module):
 
         x_list = []
         for count in range(self.iteration):
-            x = torch.cat((input, x), 1) # 一次扩张
+            x = torch.cat((input, x), 1)
             x = self.conv0(x)
 
-            x = torch.cat((x, h), 1) # 二次扩张
+            x = torch.cat((x, h), 1) 
             i = self.conv_i(x) 
             f = self.conv_f(x)
             g = self.conv_g(x)
             o = self.conv_o(x)
-            c = f * c + i * g # 三次扩张：lstm的长记忆更新公式  
-            h = o * torch.tanh(c) # lstm的短时记忆更新公式
+            c = f * c + i * g 
+            h = o * torch.tanh(c) 
 
-            x = h #　以下逐级扩张
+            x = h 
             resx = x
             x = F.relu(self.res_conv1(x) + resx) #  
             resx = x
